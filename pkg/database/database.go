@@ -11,7 +11,7 @@ import (
 var DB *gorm.DB
 
 func InitDB() {
-	dsn := "host=localhost user=postgres password=yourpassword dbname=yourdb port=5432 sslmode=disable"
+	dsn := "postgresql://neondb_owner:npg_GrmyCk9LpqA6@ep-still-math-a5efg1kr-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
