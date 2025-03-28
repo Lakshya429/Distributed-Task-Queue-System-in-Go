@@ -24,3 +24,9 @@ func GetVideoByUser(userID string) ([] models.Video , error) {
 	err := DB.Where("user_id = ?" , userID).Find(&video).Error
 	return video , err
 }
+
+func GetUserbyUserName(username string) (* models.User , error) {
+	var user models.User
+	err := DB.Where("username = ?" , username).First(&user).Error
+	return &user , err
+}
