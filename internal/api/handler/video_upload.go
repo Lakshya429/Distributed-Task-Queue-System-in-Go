@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -8,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
+	"github.com/Lakshya429/distributed-task-queue/internal/kafka"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +22,15 @@ func init() {
 	}
 }
 
+type VideoEvent struct {
+	FileName string `json:"file_name"`
+	FilePath string `json:"file_path"`
+}
+var producer *kafka.Producer
+
+func InitProducer(p *kafka.Producer) {
+	producer = p
+}
 
 func VideoUploadHandler(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
@@ -44,6 +54,19 @@ func VideoUploadHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to copy file"})
 		return
 	}
-
+	event := VideoEvent{
+		FileName: fileName,
+		FilePath: filePath,
+	}
+	jsonData , err := json.Marshal(event)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal event"})
+		return
+	}
+	err = producer.Publish("video_events", fileName, string(jsonData))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to publish event"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "File Uploaded Successfully" , "filename" : fileName})
 }
