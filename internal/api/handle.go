@@ -12,5 +12,5 @@ func RoutesHandles(router *gin.Engine) {
 
 	authorized := router.Group("/", middleware.AuthMiddleware)
 	authorized.POST("/upload", handler.VideoUploadHandler)
-	authorized.POST("/serve", handler.ServeVideo)
+	authorized.POST("/serve/:filename", handler.ServeVideo)
 }
