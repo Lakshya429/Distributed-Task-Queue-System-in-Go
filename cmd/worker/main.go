@@ -1,11 +1,40 @@
 package main 
 
 import (
-	"fmt"
-	"github.com/Lakshya429/distributed-systems/internal/queues"
+	"log"
+	"github.com/Lakshya429/distributed-task-queue/internal/queues/consumer"
+	"github.com/Lakshya429/distributed-task-queue/config"
 )
 
 func main() {
-	queues.ConnectionProducer()	
+	consumer.ConnectionConsumer()
+
+	ch , err := consumer.GetConsumer()
+
+	if err != nil {
+		log.Fatal("Failed to get Conjumer Channel ", err)
+	}
+
+	msgs, err := ch.Consume(
+		config.QueueName, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	  )
+
+	  if err != nil {
+		log.Fatal("Failed to get Conjumer Channel ", err)
+	  }
+	  forever := make(chan struct{})
+	  go func() {
+		for d := range msgs {
+			log.Printf("Received a message : %s" , d.Body)
+		}
+	}()
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
 }
 
