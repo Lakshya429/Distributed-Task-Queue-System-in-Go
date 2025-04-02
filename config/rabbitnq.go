@@ -1,29 +1,29 @@
-// config/rabbitmq.go
 package config
 
 import (
+	"log"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
-	QueueName   = "Wokers"
+	QueueName   = "Workers" // Fixed typo from "Wokers"
 	ExchangeName = ""
 	RoutingKey  = ""
 )
 
-// GetConnection returns a new RabbitMQ connection
-func GetConnection() (*amqp.Connection, error) {
-	// Update connection string as needed
-	return amqp.Dial("amqp://guest:guest@localhost:5672/")
-}
-
-// GetChannel returns a new channel from a connection
-func GetChannel() (*amqp.Channel, error) {
-	conn, err := GetConnection()
+// GetChannel returns a new RabbitMQ connection and channel
+func GetChannel() (*amqp.Connection, *amqp.Channel, error) {
+	conn, err := amqp.Dial("amqp://Lakshya:Lakshya123@localhost:5672/")
 	if err != nil {
-		return nil, err
+		log.Printf("Failed to get Connection: %v", err)
+		return nil, nil, err
 	}
-	defer conn.Close()
-	
-	return conn.Channel()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		conn.Close() // Clean up connection if channel creation fails
+		return nil, nil, err
+	}
+
+	return conn, ch, nil
 }

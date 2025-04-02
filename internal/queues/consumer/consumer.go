@@ -1,44 +1,42 @@
 package consumer
 
 import (
-	"log"
-	"errors"
 	"github.com/Lakshya429/distributed-task-queue/config"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
-}
+// Global variables for connection and channel
+var conn *amqp.Connection
 var ch *amqp.Channel
-var err error
-func ConnectionConsumer() error {
-	ch , err = config.GetChannel()
 
+func ConnectionConsumer() ( *amqp.Channel , error) {
+	var err error
+	conn, ch, err = config.GetChannel()
 	if err != nil {
-		return err
+		return ch , err
 	}
-	defer ch.Close()
 
 	_, err = ch.QueueDeclare(
-		config.QueueName,
-		false,
-		false,
-		false,
-		false,
-		nil,
+		config.QueueName, // "Workers"
+		false,            // durable
+		false,            // auto-delete
+		false,            // exclusive
+		false,            // no-wait
+		nil,              // args
 	)
-	failOnError(err, "Failed to declare a queue")
-	return nil
-}
-
-func GetConsumer()(*amqp.Channel , error){
-	if (ch == nil){
-		return nil, errors.New("channel not initialized")
+	if err != nil {
+		ch.Close()
+		conn.Close()
+		return ch , err
 	}
-	return ch , nil
+	return ch ,nil
 }
-
-
+// Close cleans up the connection and channel
+func Close() {
+	if ch != nil {
+		ch.Close()
+	}
+	if conn != nil {
+		conn.Close()
+	}
+}

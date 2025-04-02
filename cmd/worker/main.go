@@ -7,14 +7,10 @@ import (
 )
 
 func main() {
-	consumer.ConnectionConsumer()
-
-	ch , err := consumer.GetConsumer()
-
+	ch , err  :=consumer.ConnectionConsumer()
 	if err != nil {
 		log.Fatal("Failed to get Conjumer Channel ", err)
 	}
-
 	msgs, err := ch.Consume(
 		config.QueueName, // queue
 		"",     // consumer
