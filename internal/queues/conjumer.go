@@ -1,61 +1,59 @@
-package queue
+package queues
 
 import (
-	"fmt"
-	"log"
+	"context"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// Consumer represents a RabbitMQ message consumer
 type Consumer struct {
-	channel *amqp.Channel
+	ctx    *context.Context
+	cancel *context.CancelFunc
+	q      *amqp.Queue
 }
 
-// NewConsumer initializes a new Consumer
-func NewConsumer(rabbitMQURL string) (*Consumer, error) {
-	conn, err := amqp.Dial(rabbitMQURL)
+var ConsumerBroker *Consumer
+
+func Connection() error {
+	conn, err := amqp.Dial("amqp://Lakshya:Lakshya123@localhost:5672/")
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
+		return err
 	}
+
+	defer conn.Close()
 
 	ch, err := conn.Channel()
 	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to open a channel: %w", err)
+		return err
 	}
 
-	return &Consumer{channel: ch}, nil
-}
+	defer ch.Close()
 
-// Consume starts consuming messages from the specified queue
-func (c *Consumer) Consume(queueName string, handler func([]byte)) error {
-	msgs, err := c.channel.Consume(
-		queueName,
-		"",
-		true,  // Auto-acknowledge
-		false, // Exclusive
-		false, // No-local
-		false, // No-wait
-		nil,   // Args
+	q, err := ch.QueueDeclare(
+		"queue", // name
+		false,   // durable
+		false,   // delete when unused
+		false,   // exclusive
+		false,   // no-wait
+		nil,     // arguments
 	)
 	if err != nil {
-		return fmt.Errorf("failed to start consuming: %w", err)
+		return err
 	}
 
-	go func() {
-		for msg := range msgs {
-			handler(msg.Body)
-		}
-	}()
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 
-	log.Printf("Consumer started for queue: %s", queueName)
+	ConsumerBroker = &Consumer{
+		ctx:    &ctx,
+		cancel: &cancel,
+		q:      &q,
+	}
+
+	defer cancel()
+
 	return nil
 }
-
-// Close closes the consumer's channel
-func (c *Consumer) Close() {
-	if c.channel != nil {
-		c.channel.Close()
-	}
+func GetConsumer() *Consumer {
+	return ConsumerBroker
 }
